@@ -1,0 +1,18 @@
+from pydub import AudioSegment
+from pydub.effects import normalize
+
+# Carregar o arquivo original
+audio = AudioSegment.from_file("/Users/pedrohenriquespereira/Downloads/lellocantor-e-paixao-70cf50bf.mp3")
+
+audio = audio.set_frame_rate(22050) #frequência de captação
+
+audio = audio.set_channels(1) #Mono (stereo é mais pesado)
+
+audio = audio[:30 * 1000] #Seleciona os primeiro 300000 ms(30 s)
+
+audio = normalize(audio) #ajusta o volume do áudio pelo pico máximo
+
+audio = audio.set_sample_width(2) #bytes por amostra
+
+# Rever mp3 x wav
+audio.export("/Users/pedrohenriquespereira/Downloads/output.wav", format="wav") 
