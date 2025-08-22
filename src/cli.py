@@ -15,14 +15,19 @@ from with_features.extractor import extract_features, process_features_for_all_f
 from with_features.random_forest import RandomForestGenreClassifier
 from with_features.mlp import MLPGenreClassifier
 
+from with_spectrogram.extractor import process_spectrograms_for_all_files
+from with_spectrogram.cnn import CNNGenreClassifier
+
 MLP_NAME = "MLP"
 RF_NAME = "Random Forest"
+CNN_NAME = "CNN"
 
 
 class SubmenuCLI:
     def __init__(self):
         self.rf_classifier = RandomForestGenreClassifier()
         self.mlp_classifier = MLPGenreClassifier()
+        self.cnn_classifier = CNNGenreClassifier()
         self.current_option = 0
         self.current_menu = "main"
 
@@ -40,19 +45,19 @@ class SubmenuCLI:
             },
             "train": {
                 "title": "🚀 TREINAR MODELO",
-                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "⬅️  Voltar"],
+                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "🖼️ Treinar CNN", "⬅️  Voltar"],
             },
             "test": {
                 "title": "🧪 TESTAR MODELO",
-                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "⬅️  Voltar"],
+                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "🖼️ Testar CNN", "⬅️  Voltar"],
             },
             "save": {
                 "title": "💾 SALVAR MODELO",
-                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "⬅️  Voltar"],
+                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "🖼️ Salvar CNN", "⬅️  Voltar"],
             },
             "reprocess": {
                 "title": "📊 REPROCESSAR DADOS",
-                "options": ["🔄 Reprocessar dados", "⬅️  Voltar"],
+                "options": ["🔄 Reprocessar features", "🔄 Reprocessar espectrogramas", "⬅️  Voltar"],
             },
         }
 
@@ -106,6 +111,9 @@ class SubmenuCLI:
         elif model_type == MLP_NAME:
             self.try_load_model(self.mlp_classifier)
             return self.mlp_classifier
+        elif model_type == CNN_NAME:
+            self.try_load_model(self.cnn_classifier)
+            return self.cnn_classifier
         else:
             return None
 
@@ -224,6 +232,8 @@ class SubmenuCLI:
         elif self.current_option == 1:
             callback(MLP_NAME)
         elif self.current_option == 2:
+            callback(CNN_NAME)
+        elif self.current_option == 3:
             self.current_menu = "main"
             self.current_option = 0
 
@@ -231,6 +241,8 @@ class SubmenuCLI:
         if self.current_option == 0:
             process_features_for_all_files()
         elif self.current_option == 1:
+            process_spectrograms_for_all_files()
+        elif self.current_option == 2:
             self.current_menu = "main"
             self.current_option = 0
 
