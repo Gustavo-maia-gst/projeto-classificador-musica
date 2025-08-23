@@ -3,7 +3,6 @@ import os
 import numpy as np
 import os
 import sys
-import librosa
 
 if os.name == "nt":
     import msvcrt
@@ -11,7 +10,7 @@ else:
     import tty
     import termios
 
-from with_features.extractor import extract_features, process_features_for_all_files
+from with_features.extractor import process_features_for_all_files
 from with_features.random_forest import RandomForestGenreClassifier
 from with_features.mlp import MLPGenreClassifier
 
@@ -160,21 +159,25 @@ class SubmenuCLI:
                 input("Pressione ENTER para continuar...")
                 return
 
-            y, sr = librosa.load(file_path, sr=22050, mono=True)
-            features = extract_features(y, sr)
+            prediction, probabilities = model.predict(file_path)
 
-            prediction, probabilities = model.predict(features)
+            if prediction is None:
+                print("❌ Erro na predição")
+                input("Pressione ENTER para continuar...")
+                return
 
             print(f"\n🎯 PREDIÇÃO DA AMOSTRA:")
             print(f"Gênero predito: {prediction}")
             print("Top3 Probabilidades:")
 
-            # Mostrar top 3 probabilidades
             sorted_probs = sorted(
                 enumerate(probabilities), key=lambda x: x[1], reverse=True
             )
             for i, (class_idx, prob) in enumerate(sorted_probs[:3]):
-                genre = self.current_model.model.classes_[class_idx]
+                if model_type == CNN_NAME:
+                    genre = model.classes[class_idx]
+                else:
+                    genre = model.model.classes_[class_idx]
                 print(f"  {genre}: {prob:.4f}")
 
             input("Pressione ENTER para continuar...")
