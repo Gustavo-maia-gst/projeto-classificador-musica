@@ -13,12 +13,14 @@ else:
 from with_features.extractor import process_features_for_all_files
 from with_features.random_forest import RandomForestGenreClassifier
 from with_features.mlp import MLPGenreClassifier
+from with_features.svm import SVMGenreClassifier
 
 from with_spectrogram.extractor import process_spectrograms_for_all_files
 from with_spectrogram.cnn import CNNGenreClassifier
 
 MLP_NAME = "MLP"
 RF_NAME = "Random Forest"
+SVM_NAME = "SVM"
 CNN_NAME = "CNN"
 
 
@@ -26,6 +28,7 @@ class SubmenuCLI:
     def __init__(self):
         self.rf_classifier = RandomForestGenreClassifier()
         self.mlp_classifier = MLPGenreClassifier()
+        self.svm_classifier = SVMGenreClassifier()
         self.cnn_classifier = CNNGenreClassifier()
         self.current_option = 0
         self.current_menu = "main"
@@ -44,15 +47,15 @@ class SubmenuCLI:
             },
             "train": {
                 "title": "🚀 TREINAR MODELO",
-                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "🖼️ Treinar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "📐 Treinar SVM", "🖼️ Treinar CNN", "⬅️  Voltar"],
             },
             "test": {
                 "title": "🧪 TESTAR MODELO",
-                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "🖼️ Testar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "📐 Testar SVM", "🖼️ Testar CNN", "⬅️  Voltar"],
             },
             "save": {
                 "title": "💾 SALVAR MODELO",
-                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "🖼️ Salvar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "📐 Salvar SVM", "🖼️ Salvar CNN", "⬅️  Voltar"],
             },
             "reprocess": {
                 "title": "📊 REPROCESSAR DADOS",
@@ -110,6 +113,9 @@ class SubmenuCLI:
         elif model_type == MLP_NAME:
             self.try_load_model(self.mlp_classifier)
             return self.mlp_classifier
+        elif model_type == SVM_NAME:
+            self.try_load_model(self.svm_classifier)
+            return self.svm_classifier
         elif model_type == CNN_NAME:
             self.try_load_model(self.cnn_classifier)
             return self.cnn_classifier
@@ -174,10 +180,7 @@ class SubmenuCLI:
                 enumerate(probabilities), key=lambda x: x[1], reverse=True
             )
             for i, (class_idx, prob) in enumerate(sorted_probs[:3]):
-                if model_type == CNN_NAME:
-                    genre = model.classes[class_idx]
-                else:
-                    genre = model.model.classes_[class_idx]
+                genre = model.classes[class_idx]
                 print(f"  {genre}: {prob:.4f}")
 
             input("Pressione ENTER para continuar...")
@@ -235,8 +238,10 @@ class SubmenuCLI:
         elif self.current_option == 1:
             callback(MLP_NAME)
         elif self.current_option == 2:
-            callback(CNN_NAME)
+            callback(SVM_NAME)
         elif self.current_option == 3:
+            callback(CNN_NAME)
+        elif self.current_option == 4:
             self.current_menu = "main"
             self.current_option = 0
 

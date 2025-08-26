@@ -16,25 +16,26 @@ TEST_SIZE = 0.2
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 class MLPGenreClassifier:
-    def __init__(self, hidden_layer_sizes=(128, 64, 32), random_state=42):
+    def __init__(self, hidden_layer_sizes=(256, 128, 64, 32), random_state=42):
         self.model = MLPClassifier(
             hidden_layer_sizes=hidden_layer_sizes,
             random_state=random_state,
             max_iter=500,
-            alpha=0.0005,
-            learning_rate_init=0.0005,
+            alpha=0.001,
+            learning_rate_init=0.001,
             solver='adam',
             activation='relu',
             early_stopping=True,
             n_iter_no_change=15
         )
-        self.scaler = MinMaxScaler()
+        self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
         self.is_trained = False
 
     def load_data(self, X_path='./src/with_features/X.npy', Y_path='./src/with_features/Y.npy'):
         self.X = np.load(X_path)
         self.y = np.load(Y_path)
+        self.classes = np.unique(self.y)
         self.y = self.label_encoder.fit_transform(self.y)
 
         print(f"Dados carregados: {self.X.shape[0]} amostras, {self.X.shape[1]} features")
@@ -45,11 +46,10 @@ class MLPGenreClassifier:
         )
 
         rng = np.random.default_rng(42)
-        X_aug = X_train + rng.normal(0, 0.2, X_train.shape)
+        X_aug = X_train + rng.normal(0, 0.25, X_train.shape)
         X_train = np.vstack([X_train, X_aug])
         y_train = np.concatenate([y_train, y_train])
 
-        # Normalizar dados
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
 
@@ -62,7 +62,7 @@ class MLPGenreClassifier:
 
         print(f"Acurácia: {accuracy:.4f}")
         print("\nRelatório de Classificação:")
-        print(classification_report(y_test, y_pred))
+        print(classification_report(list(map(lambda x: self.classes[x], y_test)), list(map(lambda x: self.classes[x], y_pred))))
 
         return accuracy
 
@@ -77,6 +77,11 @@ class MLPGenreClassifier:
 
         y, sr = librosa.load(file_path, sr=22050, mono=True)
         features = extract_features(y, sr)
+        features = features.reshape(1, -1)
+        
+        # Normalizar features
+        features_scaled = self.scaler.transform(features)
+        
         prediction = self.model.predict(features)[0]
         probabilities = self.model.predict_proba(features)[0]
 
@@ -87,7 +92,7 @@ class MLPGenreClassifier:
             print("Erro: Modelo não foi treinado!")
             return
 
-        model_data = {'model': self.model, 'scaler': self.scaler}
+        model_data = {'model': self.model, 'scaler': self.scaler, 'classes': self.classes}
         joblib.dump(model_data, filepath)
         print(f"Modelo salvo em: {filepath}")
 
@@ -99,6 +104,7 @@ class MLPGenreClassifier:
         model_data = joblib.load(filepath)
         self.model = model_data['model']
         self.scaler = model_data['scaler']
+        self.classes = model_data['classes']
         self.is_trained = True
         print(f"Modelo carregado de: {filepath}")
 
