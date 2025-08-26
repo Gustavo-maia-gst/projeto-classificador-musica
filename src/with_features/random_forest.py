@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import LabelEncoder
 import joblib
 import os
 import librosa
@@ -20,15 +20,13 @@ class RandomForestGenreClassifier:
             bootstrap=True,
             n_jobs=1
         )
+        self.label_encoder = LabelEncoder()
         self.is_trained = False
         
     def load_data(self, X_path='./src/with_features/X.npy', Y_path='./src/with_features/Y.npy'):
-        X_raw = np.load(X_path)
-        y_raw = np.load(Y_path)
-
-        X_aug = X_raw + np.random.normal(0, 0.01, X_raw.shape)
-        self.X = np.vstack([X_raw, X_aug])
-        self.y = np.concatenate([y_raw, y_raw])
+        self.X = np.load(X_path)
+        self.y = np.load(Y_path)
+        self.y = self.label_encoder.fit_transform(self.y)
         
         print(f"Dados carregados: {self.X.shape[0]} amostras, {self.X.shape[1]} features")
         
@@ -43,6 +41,11 @@ class RandomForestGenreClassifier:
         X_train, X_test, y_train, y_test = train_test_split(
             self.X, self.y, test_size=TEST_SIZE, random_state=42, stratify=self.y
         )
+
+        rng = np.random.default_rng(42)
+        X_aug = X_train + rng.normal(0, 0.2, X_train.shape)
+        X_train = np.vstack([X_train, X_aug])
+        y_train = np.concatenate([y_train, y_train])
         
         # Treina modelo final
         self.model.fit(X_train, y_train)
