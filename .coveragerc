@@ -1,0 +1,11 @@
+[run]
+branch = True
+source = src
+include = src/**/*.py
+
+[report]
+show_missing = True
+skip_covered = False
+
+[paths]
+source = src
