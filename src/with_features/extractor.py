@@ -56,15 +56,17 @@ def extract_features(y, sr):
     )
 
 
+import os
+
 def extract_features_from_file(file_path):
-    label = re.search(r"data/(\w+)/\w+\.\d{5}\.wav", file_path).group(1)
+    # Pega o nome da pasta como rótulo (ex: "blues")
+    label = os.path.basename(os.path.dirname(file_path))
 
-    """Extrai features de uma música .wav"""
     y, sr = librosa.load(file_path, sr=22050, mono=True)
-
     features = extract_features(y, sr)
 
     return features, label
+
 
 
 def process_features_for_all_files():

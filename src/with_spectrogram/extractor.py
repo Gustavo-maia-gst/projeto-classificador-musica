@@ -30,12 +30,11 @@ def extract_spectrogram(y, sr, n_mels=128, n_fft=2048, hop_length=512):
     return spectrogram
 
 def extract_spectrogram_from_file(file_path):
-    label = re.search(r'data/(\w+)/\w+\.\d{5}\.wav', file_path).group(1)
+    label = os.path.basename(os.path.dirname(file_path))
 
     y, sr = librosa.load(file_path, sr=22050, mono=True)
-
     spectrogram = extract_spectrogram(y, sr)
-    
+
     return spectrogram, label
 
 def process_spectrograms_for_all_files():
