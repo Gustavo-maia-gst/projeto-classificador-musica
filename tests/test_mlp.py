@@ -1,4 +1,5 @@
 from with_features.mlp import MLPGenreClassifier
 
 def test():
-    assert(True)
+    model = MLPGenreClassifier()
+    assert  isinstance(model, MLPGenreClassifier) 
