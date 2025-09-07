@@ -8,6 +8,8 @@ from sklearn.preprocessing import LabelEncoder
 import warnings
 import joblib
 import os
+#TODO MUDAR STRING NO LOAD DATA
+#TODO MUDAR O PREDICT FILE PATH
 
 TEST_SIZE = 0.2
 
