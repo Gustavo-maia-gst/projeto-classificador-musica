@@ -8,6 +8,8 @@ from sklearn.preprocessing import LabelEncoder
 import warnings
 import joblib
 import os
+#TODO MUDAR STRING NO LOAD DATA
+#TODO MUDAR O PREDICT FILE PATH
 
 TEST_SIZE = 0.2
 
@@ -196,18 +198,18 @@ def main():
     
     classifier = CNNGenreClassifier()
     classifier.load_data()
-    accuracy, history = classifier.train()
+    accuracy, history = classifier.train(epochs= 2)
     
-    # Exemplo de predição
-    sample_spectrogram = classifier.X[0]  # Primeira amostra
-    sample_spectrogram = sample_spectrogram.reshape(1, 128, 128, 1)  # agora (1,128,128,1)
-    prediction, probabilities = classifier.predict(sample_spectrogram)
+    # # Exemplo de predição
+    # sample_spectrogram = classifier.X[0]  # Primeira amostra
+    # sample_spectrogram = sample_spectrogram.reshape(1, 128, 128, 1)  # agora (1,128,128,1)
+    # prediction, probabilities = classifier.predict(sample_spectrogram)
     
-    print(f"\nExemplo de predição:")
-    print(f"Gênero predito: {prediction}")
-    print(f"Probabilidade: {max(probabilities):.4f}")
+    # print(f"\nExemplo de predição:")
+    # print(f"Gênero predito: {prediction}")
+    # print(f"Probabilidade: {max(probabilities):.4f}")
     
-    classifier.save_model()
+    # classifier.save_model()
 
 
 if __name__ == "__main__":
