@@ -2,4 +2,5 @@
 venv/
 htmlcov/
 .pytest_cache/
+.pytest_model_cache/
 .coverage

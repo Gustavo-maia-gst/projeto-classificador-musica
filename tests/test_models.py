@@ -7,6 +7,8 @@ import builtins
 import copy
 import pytest
 from inspect import getfullargspec
+import pickle
+from pathlib import Path
 
 rprint = print
 model_classes = [MLP, RF, SVM, CNN]
@@ -30,13 +32,18 @@ def untrained_model(model_class):
 trained_cache = {}
 
 @pytest.fixture
-def trained_model(model_class):
-    if(model_class not in trained_cache):
+def trained_model(request, model_class):
+    cache_dir = Path(request.config.workerinput["cache_dir"])
+    path = cache_dir / f"{model_class.__name__}.pkl"
+    if not path.exists():
+        # fallback se o master não treinou esse modelo ainda
         m = model_class()
         m.load_data()
         m = training_model(m)[0]
-        trained_cache[model_class] = m
-    return copy.deepcopy(trained_cache[model_class])
+        with open(path, "wb") as f:
+            pickle.dump(m, f)
+    with open(path, "rb") as f:
+        return pickle.load(f)
 
 def test(model_class):
     model = model_class()
