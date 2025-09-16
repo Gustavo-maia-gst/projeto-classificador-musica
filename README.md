@@ -28,6 +28,7 @@ python src/cli.py # é importante ser da pasta root
 
 #### Modelos Disponíveis
 
+- **🖼️ CRNN**
 - **🖼️ CNN**
 - **🧠 MLP**
 - **📐 SVM**
@@ -52,6 +53,7 @@ python src/cli.py # é importante ser da pasta root
   - Spectral Centroid 
 
 - Os espectrogramas são gerados a partir do mel spectrogram
+- Foram usados técnicas de data augmentation para treinamento dos modelos
 
 ## Estrutura
 
