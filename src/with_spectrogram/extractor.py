@@ -11,6 +11,9 @@ TARGET_LENGTH = 128
 AUDIO_FOLDER = "./data"
 
 def extract_spectrogram(y, sr, n_mels=128, n_fft=2048, hop_length=512):
+    if y is None or y.size == 0:
+        raise ValueError("Sinal de entrada está Vazio!")
+
     mel_spectrogram = librosa.feature.melspectrogram(
         y=y, 
         sr=sr, 
