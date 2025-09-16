@@ -1,6 +1,6 @@
 # 🎵 Classificador de Gêneros Musicais
 
-Sistema de classificação automática de gêneros musicais usando machine learning. O projeto implementa 4 algoritmos diferentes: MLP, CNN, SVM e Random Forest.
+Sistema de classificação automática de gêneros musicais usando machine learning. O projeto implementa 5 algoritmos diferentes: CRNN, MLP, CNN, SVM e Random Forest.
 
 ## Como Usar
 
