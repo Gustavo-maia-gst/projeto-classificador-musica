@@ -3,3 +3,4 @@ venv/
 htmlcov/
 .pytest_cache/
 .coverage
+*.npy
