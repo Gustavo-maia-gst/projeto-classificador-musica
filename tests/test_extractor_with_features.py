@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
 from with_features import extractor
+import pathlib
 
 
 # Fixture para mock do librosa
@@ -63,28 +64,43 @@ def test_extract_features_from_file(mock_load, tmp_path):
 
 # Testa process_features_for_all_files
 
-@patch("with_features.extractor.extract_features_from_file", return_value=(np.ones(66), "rock"))
-@patch("with_features.extractor.os.listdir")
-@patch("with_features.extractor.os.path.isdir", return_value=True)
-def test_process_features_for_all_files(mock_isdir, mock_listdir, mock_extract, tmp_path):
-    # Simula diretórios de gêneros e arquivos .wav
-    mock_listdir.side_effect = [
-        ["rock"],  # gênero
-        ["song1.wav"],  # arquivos
-    ]
+def fake_extract_features_from_file(path):
+    return np.ones(66), "rock"
 
-    # Define a pasta base de áudio para o teste
+def test_process_features_for_all_files(monkeypatch, tmp_path):
+    # captura a função np.save original ANTES de monkeypatchar
+    original_save = extractor.np.save
+
+    # substitui extract_features_from_file por função top-level (picklable)
+    monkeypatch.setattr(extractor, "extract_features_from_file", fake_extract_features_from_file)
+
+    # fake para os.listdir / isdir (simula 1 gênero e 1 arquivo .wav)
+    def fake_listdir(path):
+        cnt = getattr(fake_listdir, "cnt", 0)
+        fake_listdir.cnt = cnt + 1
+        return ["rock"] if cnt == 0 else ["song1.wav"]
+
+    monkeypatch.setattr(extractor.os, "listdir", fake_listdir)
+    monkeypatch.setattr(extractor.os.path, "isdir", lambda p: True)
+
+    # prepara tmp dir
     extractor.AUDIO_FOLDER = str(tmp_path)
     (tmp_path / "rock").mkdir()
 
-    # Mock np.save para não criar arquivos reais
-    with patch("with_features.extractor.np.save") as mock_save:
-        extractor.process_features_for_all_files()
+    # fake_np_save grava os .npy no tmp_path usando a função original_save (não recursiva)
+    def fake_np_save(file, arr, *args, **kwargs):
+        file_name = pathlib.Path(file).name
+        dest = tmp_path / file_name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        # chama a função original que salvava arquivos (não será recursiva)
+        original_save(str(dest), arr, *args, **kwargs)
 
-        # Verifica se X.npy e Y.npy foram "salvos"
-        saved_files = [call.args[0] for call in mock_save.call_args_list]
-        assert any("X.npy" in f for f in saved_files)
-        assert any("Y.npy" in f for f in saved_files)
+    # aplica o monkeypatch na função save do módulo extractor (substitui por nossa fake)
+    monkeypatch.setattr(extractor.np, "save", fake_np_save)
 
-        # Verifica se pelo menos um arquivo foi processado
-        mock_extract.assert_called_once()
+    # executa
+    extractor.process_features_for_all_files()
+
+    # asserções
+    assert (tmp_path / "X.npy").exists(), "X.npy não foi criado em tmp_path"
+    assert (tmp_path / "Y.npy").exists(), "Y.npy não foi criado em tmp_path"
