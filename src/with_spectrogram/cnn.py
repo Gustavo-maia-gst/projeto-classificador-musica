@@ -164,10 +164,10 @@ class CNNGenreClassifier:  # pylint: disable=too-many-instance-attributes
         if len(spectrogram.shape) == 2:
             spectrogram = spectrogram[np.newaxis, ..., np.newaxis]
 
-        probs = self.model.predict(spectrogram)[0]
-        idx = np.argmax(probs)
+        prediction = self.model.predict(spectrogram)[0]
+        probabilities = self.model.predict_proba(spectrogram)[0]
 
-        return self.classes[idx], probs
+        return prediction, probabilities
 
     def save_model(self, filepath='./src/with_spectrogram/cnn.model'):
         """Salva o modelo treinado no disco."""

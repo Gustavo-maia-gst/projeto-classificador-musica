@@ -205,7 +205,7 @@ class CRNNGenreClassifier: # pylint: disable=too-many-instance-attributes
         probs = self.model.predict(spectrogram, verbose=0)[0]
         idx = np.argmax(probs)
 
-        return self.classes[idx], probs
+        return prediction, probabilities
 
     def save_model(self, path='src/with_spectrogram/crnn.model'):
         """Salva o modelo e encoder em disco.
