@@ -1,75 +1,90 @@
+# extractor_augmented_sliding.py
 import librosa
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
-import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-import re
+import cv2
 
 N_JOBS = 8
-TARGET_LENGTH = 128
 AUDIO_FOLDER = "./data"
+WINDOW_DURATION = 10.0  # segundos
+STEP_DURATION = 5       # segundos
+SR = 22050
+N_FFT = 2048
+HOP_LENGTH = 1024
+N_MFCC = 128  # agora 128 coeficientes
+TARGET_FRAMES = 128  # queremos 128 frames no tempo
 
-def extract_spectrogram(y, sr, n_mels=128, n_fft=2048, hop_length=512):
-    if y is None or y.size == 0:
-        raise ValueError("Sinal de entrada está Vazio!")
+def extract_spectrogram(y, sr, n_mfcc=N_MFCC, hop_length=HOP_LENGTH, target_frames=TARGET_FRAMES):
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc, hop_length=hop_length)
+    mfcc_resized = cv2.resize(mfcc, (target_frames, n_mfcc), interpolation=cv2.INTER_LINEAR)
+    mfcc_resized = (mfcc_resized - mfcc_resized.mean()) / (mfcc_resized.std() + 1e-9)
+    return mfcc_resized.astype(np.float32)
 
-    mel_spectrogram = librosa.feature.melspectrogram(
-        y=y, 
-        sr=sr, 
-        n_mels=n_mels, 
-        n_fft=n_fft, 
-        hop_length=hop_length
-    )
-    
-    spectrogram = librosa.power_to_db(mel_spectrogram, ref=np.max)
+def augment_audio(y, sr):
+    augmented = [y]
+    # Pitch shift
+    for n_steps in [-2, 2]:
+        augmented.append(librosa.effects.pitch_shift(y, sr=sr, n_steps=n_steps))
 
-    if spectrogram.shape[1] < TARGET_LENGTH:
-        pad_width = TARGET_LENGTH - spectrogram.shape[1]
-        spectrogram = np.pad(spectrogram, ((0, 0), (0, pad_width)), mode='constant')
-    else:
-        spectrogram = spectrogram[:, :TARGET_LENGTH]
-    
-    return spectrogram
+    # Time stretch
+    for rate in [0.9, 1.1]:
+        augmented.append(librosa.effects.time_stretch(y, rate=rate))
 
-def extract_spectrogram_from_file(file_path):
+    # White noise
+    wn = 0.005 * np.random.randn(len(y))
+    augmented.append(y + wn)
+    return augmented
+
+def sliding_windows(y, sr, window_duration=WINDOW_DURATION, step_duration=STEP_DURATION):
+    window_len = int(sr * window_duration)
+    step_len = int(sr * step_duration)
+    windows = []
+    for start in range(0, len(y) - window_len + 1, step_len):
+        windows.append(y[start:start+window_len])
+    return windows
+
+def process_file(file_path):
     label = os.path.basename(os.path.dirname(file_path))
+    y, sr = librosa.load(file_path, sr=SR, mono=True)
 
-    y, sr = librosa.load(file_path, sr=22050, mono=True)
-    spectrogram = extract_spectrogram(y, sr)
+    windows = sliding_windows(y, sr)
+    mfccs = []
+    labels = []
 
-    return spectrogram, label
+    for win in windows:
+        augmented_segments = augment_audio(win, sr)
+        for seg in augmented_segments:
+            mfcc = extract_spectrogram(seg, sr)
+            mfccs.append(mfcc)
+            labels.append(label)
+
+    mfccs = np.array(mfccs)
+    labels = np.array(labels)
+    return mfccs, labels
+
 
 def process_spectrograms_for_all_files():
-    genres_folders = [
-        os.path.join(AUDIO_FOLDER, f)
-        for f in os.listdir(AUDIO_FOLDER)
-        if os.path.isdir(os.path.join(AUDIO_FOLDER, f))
-    ]
-    print(f"Iniciando o processamento dos espectrogramas, por favor não interrompa o processo...")
-    print(f"Gêneros para processar: {list(map(os.path.basename, genres_folders))}\n")
-
+    genres_folders = [os.path.join(AUDIO_FOLDER, f) for f in os.listdir(AUDIO_FOLDER) if os.path.isdir(os.path.join(AUDIO_FOLDER, f))]
     all_files = []
-    all_spectrograms = []
+    for folder in genres_folders:
+        all_files.extend([os.path.join(folder, f) for f in os.listdir(folder)])
 
-    for genre_folder in genres_folders:
-        files = [
-            os.path.join(genre_folder, f)
-            for f in os.listdir(genre_folder)
-            if f.endswith(".wav")
-        ]
-        all_files.extend(files)
+    X_all = []
+    Y_all = []
 
     with ThreadPoolExecutor(max_workers=N_JOBS) as executor:
-        futures = {executor.submit(extract_spectrogram_from_file, f): f for f in all_files}
-        for future in tqdm(as_completed(futures), desc="Extraindo espectrogramas", total=len(all_files)):
-            all_spectrograms.append(future.result())
+        futures = {executor.submit(process_file, f): f for f in all_files}
+        for future in tqdm(as_completed(futures), total=len(all_files)):
+            mfccs, labels = future.result()
+            X_all.extend(mfccs)
+            Y_all.extend(labels)
 
-    X = np.array([spectrogram for spectrogram, _ in all_spectrograms])
-    Y = np.array([label for _, label in all_spectrograms])
+    X_all = np.array(X_all)
+    Y_all = np.array(Y_all)
+    np.save("src/with_spectrogram/X.npy", X_all)
+    np.save("src/with_spectrogram/Y.npy", Y_all)
 
-    np.save("./src/with_spectrogram/X.npy", X)
-    np.save("./src/with_spectrogram/Y.npy", Y)
-    
 if __name__ == "__main__":
     process_spectrograms_for_all_files()

@@ -11,17 +11,20 @@ else:
     import termios
 
 from with_features.extractor import process_features_for_all_files
+from sklearn.metrics import classification_report, confusion_matrix
 from with_features.random_forest import RandomForestGenreClassifier
 from with_features.mlp import MLPGenreClassifier
 from with_features.svm import SVMGenreClassifier
 
 from with_spectrogram.extractor import process_spectrograms_for_all_files
 from with_spectrogram.cnn import CNNGenreClassifier
+from with_spectrogram.crnn import CRNNGenreClassifier
 
 MLP_NAME = "MLP"
 RF_NAME = "Random Forest"
 SVM_NAME = "SVM"
 CNN_NAME = "CNN"
+CRNN_NAME = "CRNN"
 
 
 class SubmenuCLI:
@@ -30,6 +33,7 @@ class SubmenuCLI:
         self.mlp_classifier = MLPGenreClassifier()
         self.svm_classifier = SVMGenreClassifier()
         self.cnn_classifier = CNNGenreClassifier()
+        self.crnn_classifier = CRNNGenreClassifier()
         self.current_option = 0
         self.current_menu = "main"
 
@@ -47,15 +51,15 @@ class SubmenuCLI:
             },
             "train": {
                 "title": "🚀 TREINAR MODELO",
-                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "📐 Treinar SVM", "🖼️ Treinar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Treinar Random Forest", "🧠 Treinar MLP", "📐 Treinar SVM", "🖼️ Treinar CNN", "🖼️ Treinar CRNN", "⬅️  Voltar"],
             },
             "test": {
                 "title": "🧪 TESTAR MODELO",
-                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "📐 Testar SVM", "🖼️ Testar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Testar Random Forest", "🧠 Testar MLP", "📐 Testar SVM", "🖼️ Testar CNN", "🖼️ Testar CRNN", "⬅️  Voltar"],
             },
             "save": {
                 "title": "💾 SALVAR MODELO",
-                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "📐 Salvar SVM", "🖼️ Salvar CNN", "⬅️  Voltar"],
+                "options": ["🌲 Salvar Random Forest", "🧠 Salvar MLP", "📐 Salvar SVM", "🖼️ Salvar CNN", "🖼️ Salvar CRNN", "⬅️  Voltar"],
             },
             "reprocess": {
                 "title": "📊 REPROCESSAR DADOS",
@@ -104,7 +108,7 @@ class SubmenuCLI:
                 return ch
             finally:
                 termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    
+
     def get_model(self, model_type):
         """Retorna o modelo atual"""
         if model_type == RF_NAME:
@@ -119,6 +123,9 @@ class SubmenuCLI:
         elif model_type == CNN_NAME:
             self.try_load_model(self.cnn_classifier)
             return self.cnn_classifier
+        elif model_type == CRNN_NAME:
+            self.try_load_model(self.crnn_classifier)
+            return self.crnn_classifier
         else:
             return None
 
@@ -179,7 +186,7 @@ class SubmenuCLI:
             sorted_probs = sorted(
                 enumerate(probabilities), key=lambda x: x[1], reverse=True
             )
-            for i, (class_idx, prob) in enumerate(sorted_probs[:3]):
+            for (class_idx, prob) in sorted_probs[:3]:
                 genre = model.classes[class_idx]
                 print(f"  {genre}: {prob:.4f}")
 
@@ -188,7 +195,7 @@ class SubmenuCLI:
         except Exception as e:
             print(f"❌ Erro na predição: {str(e)}")
             input("Pressione ENTER para continuar...")
-    
+
     def save_model(self, model_type):
         model = self.get_model(model_type)
         model.save_model()
@@ -242,6 +249,8 @@ class SubmenuCLI:
         elif self.current_option == 3:
             callback(CNN_NAME)
         elif self.current_option == 4:
+            callback(CRNN_NAME)
+        elif self.current_option == 5:
             self.current_menu = "main"
             self.current_option = 0
 
